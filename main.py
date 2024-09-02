@@ -88,7 +88,7 @@ def safe_parse(prefix=''):
 		global errors_found
 		errors_found = True
 		desc = ''.join(traceback.format_exception(exc)).rstrip().replace('\n', '\n' + prefix)
-		print(prefix + ansi_bold(ansi_fg1('[ERROR]')) + ' ' + desc)
+		print(prefix + ansi_bold(ansi_fg1('[ERROR]')) + ' ' + desc, file=sys.stderr)
 
 # formatting
 
@@ -122,8 +122,9 @@ def format_4cc(name: str, parent: Literal['manb', 'manp', None] = None) -> str:
 	else:
 		desc = repr(name)
 	desc = ansi_fgB6(desc)
-	if show_desc and parent and (info := fourcc_tables[parent][0].get(name)):
-		label = fourcc_tables[parent][1](info)
+	if show_desc and parent \
+		and (info := fourcc_tables[parent][0].get(name)) \
+		and (label := fourcc_tables[parent][1](info)):
 		desc += ansi_fg6(f' ({label})')
 	return desc
 
@@ -219,6 +220,7 @@ def __main__():
 
 	# if inner errors were found, communicate that in exit code
 	if errors_found:
+		print(ansi_fg1('There were parsing errors in subsections.'), file=sys.stderr)
 		exit(1)
 
 if __name__ == '__main__':

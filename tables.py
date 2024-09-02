@@ -19,21 +19,21 @@ component_names = dict(
 	mtpf='MTP firmware',
 	mtfw='Multitouch firmware',
 	pmpf='PMP firmware',
-	siof='SIO firmware',
+	siof='SmartIO firmware',
 	trst='Static trust cache',
 	bstc='Base system trust cache',
 
 	# (components signed by APticket that are not in the previous section)
-	# msys='',
-	# bsys='',
-	# ibec='',
+	msys=None,
+	bsys='recoveryOS rootfs ramdisk',
+	ibec=None,
 	krnl='Kernelcache',
 	rdsk='ramdisk?',
 	rkrn='recovery kernelcache?',
 	rdtr='recovery device tree?',
-	# rlgo='',
-	# rosi='',
-	# rtsc='',
+	rlgo=None,
+	rosi=None,
+	rtsc=None,
 )
 
 payload_tags = dict(
@@ -75,17 +75,18 @@ payload_tags = dict(
 
 	# (apticket inspection)
 
-	# augs=(int, ''),
+	augs=(int, None),
 	prtp=(bytes, 'Device ID'),
 	sdkp=(bytes, 'OS identifier?'),
-	# srvn=(bytes, ''),
+	srvn=(bytes, None),
 	tagt=(bytes, 'Product part ID'),
 	tatp=(bytes, 'Product ID'),
+	uidm=(bool, None),
 
 	# (ECID-specific APtickets)
 
-	# BNCH=(bytes, ''),
-	# esdm=(int, ''),
-	# snon=(bytes, ''),
-	# snuf=(bytes, ''),
+	BNCH=(bytes, None),
+	esdm=(int, None),
+	snon=(bytes, None),
+	snuf=(bytes, None),
 )
