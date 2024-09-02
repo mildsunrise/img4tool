@@ -12,7 +12,7 @@ component_names = dict(
 	anef='ANE firmware',
 	aopf='AOP firmware',
 	avef='AVE firmware',
-	dcp2='DCP firmware (v2?)',
+	dcp2='DCP2 firmware',
 	gfxf='GFX firmware',
 	ipdf='Input device firmware',
 	ispf='ISP firmware',
@@ -26,7 +26,7 @@ component_names = dict(
 	# (components signed by APticket that are not in the previous section)
 	msys=None,
 	bsys='recoveryOS rootfs ramdisk',
-	ibec=None,
+	ibec='iBEC firmware',
 	krnl='Kernelcache',
 	rdsk='ramdisk?',
 	rkrn='recovery kernelcache?',
@@ -34,6 +34,8 @@ component_names = dict(
 	rlgo=None,
 	rosi=None,
 	rtsc=None,
+
+    trbb='Bootability trust cache',
 )
 
 payload_tags = dict(
@@ -64,7 +66,8 @@ payload_tags = dict(
 	auxi=(None, 'Auxiliary Kernel Cache Image4 Hash'),
 	auxr=(None, 'Kext Receipt Hash'),
 	coih=(None, 'CustomKC or fuOS Image4 Hash'),
-	smb0=(bool, 'Boot Policy Security Mode'),
+	smb0=(bool, 'Boot Policy Security lowered to Reduced'),
+	smb1=(bool, 'Boot Policy Security lowered to Permissive'),
 	smb2=(bool, '3rd Party Kexts Status'),
 	smb3=(bool, 'User-allowed MDM Control'),
 	smb4=(bool, 'DEP-allowed MDM Control'),
@@ -89,4 +92,6 @@ payload_tags = dict(
 	esdm=(int, None),
 	snon=(bytes, None),
 	snuf=(bytes, None),
+
+    vnum=(bytes, "Version number"),
 )

@@ -173,7 +173,7 @@ def handle_manifest(stream: StreamSlice, prefix=''):
 	print_blob('Manifest body', tag_to_slice(body), prefix, intermediate=True)
 	handle_manifest_body(body, prefix + '  ')
 	print(prefix)
-	print(prefix + f'Signature ({len(signature)*8} bits): {DIGEST(signature.hex())}')
+	print(prefix + f'Signature ({len(signature)} bytes): {DIGEST(signature.hex())}')
 	print(prefix)
 	if not certs:
 		print(prefix + f'No certificates.')
