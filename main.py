@@ -2,6 +2,7 @@
 
 from io_utils import StreamSlice
 import img4
+from asn1 import Tag, tag_to_slice
 import hashlib
 import sys
 import pprint
@@ -27,12 +28,22 @@ parser.add_argument('--descriptions',
 parser.add_argument('-D', '--diff',
 	action=BooleanOptionalAction, default=False,
 	help='Produce diff-friendly output (no offsets, no intermediate lengths or hashes, always calculate final hashes)')
+parser.add_argument('-H', '--hash-limit',
+	type=int, metavar='BYTES',
+	help='Maximum blob size for which we calculate and display its hash (-1 = infinity, 0 = never) [default: 50MB, or -1 with --diff]')
 
 args = parser.parse_args()
 fname = args.filename
 colorize = sys.stdout.buffer.isatty() \
 	if args.color == None else args.color
+diff = args.diff
+hash_limit = args.hash_limit
+if hash_limit is None:
+	hash_limit = -1 if diff else 50 * 1000000
 errors_found = False
+
+if hash_limit == -1: hash_limit = float('inf')
+elif hash_limit == 0: hash_limit = -1
 
 # general utils
 
@@ -78,6 +89,25 @@ def safe_parse(prefix=''):
 
 # formatting
 
+def format_hash(blob: StreamSlice):
+	hl = hashlib.sha384()
+	blob = StreamSlice(blob.stream, blob.start, blob.end, blob.pos)
+	while blob.left:
+		hl.update(blob.read(min(blob.left, 65536)))
+	return f'sha384 {DIGEST(hl.digest().hex())}'
+
+def print_blob(name: str, blob: StreamSlice, prefix='', intermediate=False):
+	if intermediate and diff:
+		print(prefix + ansi_bold(name) + ':')
+		return
+	offset = f' @ {hex(blob.start)}' if not diff else ''
+	digest = f', {format_hash(blob)}' if blob.left < hash_limit else ('' if intermediate else ', hash skipped')
+	desc = f'{blob.left} bytes' + offset + digest
+	if intermediate:
+		print(prefix + ansi_bold(name) + f' ({desc}):')
+	else:
+		print(prefix + name + ': ' + desc)
+
 def format_4cc(name: str) -> str:
 	if len(name) == 4 and name.isascii() and name.isalnum():
 		return ansi_fgB6(name)
@@ -87,7 +117,7 @@ def handle_payload(stream: StreamSlice, prefix=''):
 	name, desc, payload, rest = img4.read_im4p(stream)
 	print(prefix + 'Name: ' + format_4cc(name))
 	print(prefix + 'Description: ' + STRING(repr(desc)))
-	print(prefix + 'Payload: ' + repr(payload))
+	print_blob('Payload', payload, prefix)
 	# TODO: rest
 
 def format_component_tag(key: str, value) -> str:
@@ -110,8 +140,7 @@ def format_im4m_value(key: str, value):
 		return ansi_fg4(value)
 	return repr(value)
 
-def handle_manifest(stream: StreamSlice, prefix=''):
-	body, signature, certs = img4.read_im4m(stream)
+def handle_manifest_body(body: Tag, prefix=''):
 	payload, components = img4.parse_im4m_body(body)
 	print(prefix + ansi_bold('Manifest payload:'))
 	with safe_parse(prefix + BAR):
@@ -123,20 +152,29 @@ def handle_manifest(stream: StreamSlice, prefix=''):
 		for key, component in components.items():
 			desc = ansi_dim(', ').join(format_component_tag(k, v) for k, v in component.items())
 			print(prefix + BULLET + format_4cc(key) + EQ + desc)
+
+def handle_manifest(stream: StreamSlice, prefix=''):
+	body, signature, certs = img4.read_im4m(stream)
+	print_blob('Manifest body', tag_to_slice(body), prefix, intermediate=True)
+	handle_manifest_body(body, prefix + '  ')
 	print(prefix)
 	print(prefix + f'Signature ({len(signature)*8} bits): {DIGEST(signature.hex())}')
-	print(prefix + f'{len(certs)} certificates: {[ (st.start, st.left) for st in certs ]}')
+	print(prefix)
+	if not certs:
+		print(prefix + f'No certificates.')
+	for i, cert in enumerate(certs):
+		print_blob(f'Certificate {i+1}', cert, prefix)
 
 def handle_image(stream: StreamSlice):
 	payload, manifest = img4.read_img4(stream)
-	print(ansi_bold('Payload:'))
+	print_blob('Payload', payload, intermediate=True)
 	with safe_parse(BAR):
 		handle_payload(payload, BAR)
 	print()
 	if not manifest:
 		print('No manifest present.')
 		return
-	print(ansi_bold('Manifest:'))
+	print_blob('Manifest', manifest, intermediate=True)
 	with safe_parse(BAR):
 		handle_manifest(manifest, BAR)
 
