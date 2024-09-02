@@ -6,6 +6,39 @@ import hashlib
 import sys
 import pprint
 import io
+import argparse
+from argparse import BooleanOptionalAction
+import traceback
+
+parser = argparse.ArgumentParser(
+	prog='img4parse',
+	description='Portable IMG4 parser',
+)
+parser.add_argument('filename', help='input file to parse')
+parser.add_argument('-C', '--color',
+	action=BooleanOptionalAction,
+	help='Colorize the output [default: only if stdout is a terminal]')
+parser.add_argument('--descriptions',
+	action=BooleanOptionalAction, default=True,
+	help='Show meanings of recognized 4-character tags and some field values')
+parser.add_argument('-D', '--diff',
+	action=BooleanOptionalAction, default=False,
+	help='Produce diff-friendly output (no offsets, no intermediate lengths or hashes, always calculate final hashes)')
+
+args = parser.parse_args()
+fname = args.filename
+colorize = sys.stdout.buffer.isatty() \
+	if args.color == None else args.color
+errors_found = False
+
+def safe_parse(fn, prefix=''):
+	try:
+		return fn()
+	except Exception as exc:
+		global errors_found
+		errors_found = True
+		desc = ''.join(traceback.format_exception(exc)).rstrip().replace('\n', '\n' + prefix)
+		print(prefix + f'[ERROR] ' + desc)
 
 def format_4cc(name: str) -> str:
 	if len(name) == 4 and name.isascii() and name.isalnum():
@@ -56,17 +89,18 @@ def handle_manifest(stream: StreamSlice, prefix=''):
 def handle_image(stream: StreamSlice):
 	payload, manifest = img4.read_img4(stream)
 	print('Payload:')
-	handle_payload(payload, ' | ')
+	safe_parse(lambda: handle_payload(payload, ' | '), ' | ')
 	print()
-	if manifest:
-		print('Manifest present:')
-		handle_manifest(manifest, ' | ')
-	else:
+	if not manifest:
 		print('No manifest present.')
+		return
+
+	print('Manifest present:')
+	safe_parse(lambda: handle_manifest(manifest, ' | '), ' | ')
 
 def __main__():
 	# open input
-	stream = sys.stdin.buffer
+	stream = sys.stdin.buffer if fname == '-' or fname is None else open(fname, 'rb')
 	if not stream.seekable():
 		stream = io.BytesIO(stream.read())
 	stream = StreamSlice(stream)
@@ -85,6 +119,10 @@ def __main__():
 		raise AssertionError(f'header {repr(hdr)} unknown')
 	print(f'Input is an {hdr}.\n')
 	objs[hdr](stream)
+
+	# if inner errors were found, communicate that in exit code
+	if errors_found:
+		exit(1)
 
 if __name__ == '__main__':
 	__main__()
