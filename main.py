@@ -9,6 +9,7 @@ import io
 import argparse
 from argparse import BooleanOptionalAction
 import traceback
+from contextlib import contextmanager
 
 parser = argparse.ArgumentParser(
 	prog='img4parse',
@@ -31,9 +32,10 @@ colorize = sys.stdout.buffer.isatty() \
 	if args.color == None else args.color
 errors_found = False
 
-def safe_parse(fn, prefix=''):
+@contextmanager
+def safe_parse(prefix=''):
 	try:
-		return fn()
+		yield
 	except Exception as exc:
 		global errors_found
 		errors_found = True
@@ -74,13 +76,15 @@ def handle_manifest(stream: StreamSlice, prefix=''):
 	body, signature, certs = img4.read_im4m(stream)
 	payload, components = img4.parse_im4m_body(body)
 	print(prefix + 'Manifest payload:')
-	for key, value in payload.items():
-		print(prefix + f' - {format_4cc(key)} = {format_im4m_value(key, value)}')
+	with safe_parse(prefix + ' | '):
+		for key, value in payload.items():
+			print(prefix + f' - {format_4cc(key)} = {format_im4m_value(key, value)}')
 	print(prefix)
 	print(prefix + 'Manifest components:')
-	for key, component in components.items():
-		desc = ', '.join(format_component_tag(k, v) for k, v in component.items())
-		print(prefix + f' - {format_4cc(key)} = {desc}')
+	with safe_parse(prefix + ' | '):
+		for key, component in components.items():
+			desc = ', '.join(format_component_tag(k, v) for k, v in component.items())
+			print(prefix + f' - {format_4cc(key)} = {desc}')
 	print(prefix)
 	print(prefix + f'Signature ({len(signature)*8} bits): {signature.hex()}')
 	print(prefix)
@@ -89,14 +93,15 @@ def handle_manifest(stream: StreamSlice, prefix=''):
 def handle_image(stream: StreamSlice):
 	payload, manifest = img4.read_img4(stream)
 	print('Payload:')
-	safe_parse(lambda: handle_payload(payload, ' | '), ' | ')
+	with safe_parse(' | '):
+		handle_payload(payload, ' | ')
 	print()
 	if not manifest:
 		print('No manifest present.')
 		return
-
-	print('Manifest present:')
-	safe_parse(lambda: handle_manifest(manifest, ' | '), ' | ')
+	print('Manifest:')
+	with safe_parse(' | '):
+		handle_manifest(manifest, ' | ')
 
 def __main__():
 	# open input
