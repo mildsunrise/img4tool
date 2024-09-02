@@ -11,6 +11,8 @@ import argparse
 from argparse import BooleanOptionalAction
 import traceback
 from contextlib import contextmanager
+import tables
+from typing import Literal
 
 # option parsing
 
@@ -36,6 +38,7 @@ args = parser.parse_args()
 fname = args.filename
 colorize = sys.stdout.buffer.isatty() \
 	if args.color == None else args.color
+show_desc = args.descriptions
 diff = args.diff
 hash_limit = args.hash_limit
 if hash_limit is None:
@@ -108,14 +111,25 @@ def print_blob(name: str, blob: StreamSlice, prefix='', intermediate=False):
 	else:
 		print(prefix + name + ': ' + desc)
 
-def format_4cc(name: str) -> str:
+fourcc_tables = {
+	'manb': (tables.component_names, lambda x: x),
+	'manp': (tables.payload_tags, lambda x: x[1]),
+}
+
+def format_4cc(name: str, parent: Literal['manb', 'manp', None] = None) -> str:
 	if len(name) == 4 and name.isascii() and name.isalnum():
-		return ansi_fgB6(name)
-	return ansi_fgB6(repr(name))
+		desc = name
+	else:
+		desc = repr(name)
+	desc = ansi_fgB6(desc)
+	if show_desc and parent and (info := fourcc_tables[parent][0].get(name)):
+		label = fourcc_tables[parent][1](info)
+		desc += ansi_fg6(f' ({label})')
+	return desc
 
 def handle_payload(stream: StreamSlice, prefix=''):
 	name, desc, payload, rest = img4.read_im4p(stream)
-	print(prefix + 'Name: ' + format_4cc(name))
+	print(prefix + 'Name: ' + format_4cc(name, 'manb'))
 	print(prefix + 'Description: ' + STRING(repr(desc)))
 	print_blob('Payload', payload, prefix)
 	# TODO: rest
@@ -145,13 +159,13 @@ def handle_manifest_body(body: Tag, prefix=''):
 	print(prefix + ansi_bold('Manifest payload:'))
 	with safe_parse(prefix + BAR):
 		for key, value in payload.items():
-			print(prefix + BULLET + format_4cc(key) + EQ + format_im4m_value(key, value))
+			print(prefix + BULLET + format_4cc(key, 'manp') + EQ + format_im4m_value(key, value))
 	print(prefix)
 	print(prefix + ansi_bold('Manifest components:'))
 	with safe_parse(prefix + BAR):
 		for key, component in components.items():
 			desc = ansi_dim(', ').join(format_component_tag(k, v) for k, v in component.items())
-			print(prefix + BULLET + format_4cc(key) + EQ + desc)
+			print(prefix + BULLET + format_4cc(key, 'manb') + EQ + desc)
 
 def handle_manifest(stream: StreamSlice, prefix=''):
 	body, signature, certs = img4.read_im4m(stream)
