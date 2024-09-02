@@ -18,16 +18,16 @@ parser = argparse.ArgumentParser(
 	prog='img4parse',
 	description='Portable IMG4 parser',
 )
-parser.add_argument('filename', help='input file to parse')
+parser.add_argument('filename', help='input IMG4/IM4M/IM4P file to parse')
 parser.add_argument('-C', '--color',
 	action=BooleanOptionalAction,
 	help='Colorize the output [default: only if stdout is a terminal]')
 parser.add_argument('--descriptions',
 	action=BooleanOptionalAction, default=True,
-	help='Show meanings of recognized 4-character tags and some field values')
+	help='Show meanings of recognized 4-character tags and some field values [default: yes]')
 parser.add_argument('-D', '--diff',
 	action=BooleanOptionalAction, default=False,
-	help='Produce diff-friendly output (no offsets, no intermediate lengths or hashes, always calculate final hashes)')
+	help='Produce diff-friendly output (no offsets, no intermediate lengths or hashes, always calculate final hashes) [default: no]')
 parser.add_argument('-H', '--hash-limit',
 	type=int, metavar='BYTES',
 	help='Maximum blob size for which we calculate and display its hash (-1 = infinity, 0 = never) [default: 50MB, or -1 with --diff]')

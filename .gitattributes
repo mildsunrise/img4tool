@@ -1,0 +1,5 @@
+*.img4	diff=img4
+*.im4p	diff=img4
+*.im4m	diff=img4
+apticket.der	diff=img4
+kernelcache	diff=img4
