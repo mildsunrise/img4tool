@@ -116,14 +116,15 @@ def __main__():
 	stream.pos = stream.start
 
 	objs = {
-		'IMG4': handle_image,
-		'IM4P': handle_payload,
-		'IM4M': handle_manifest,
+		'IMG4': (handle_image, 'image'),
+		'IM4P': (handle_payload, 'payload'),
+		'IM4M': (handle_manifest, 'manifest'),
 	}
 	if hdr not in objs:
 		raise AssertionError(f'header {repr(hdr)} unknown')
-	print(f'Input is an {hdr}.\n')
-	objs[hdr](stream)
+	fn, label = objs[hdr]
+	print(f'Input is an {hdr} ({label}).\n')
+	fn(stream)
 
 	# if inner errors were found, communicate that in exit code
 	if errors_found:
