@@ -95,3 +95,7 @@ payload_tags = dict(
 
     vnum=(bytes, "Version number"),
 )
+
+payp_tags = dict(
+    # TODO
+)

@@ -18,15 +18,33 @@ def read_img4(stream: StreamSlice) -> tuple[StreamSlice, StreamSlice | None]:
 	if stream.left:
 		manifest_cont, = read_tags(stream)
 		assert manifest_cont[1] == (TagClass.CONTEXT_SPECIFIC, True, 0)
-		manifest, = map(tag_to_slice, read_tags(manifest_cont[2]))
+		manifest = manifest_cont[2]
 	return payload, manifest
 
-def read_im4p(stream: StreamSlice) -> tuple[str, str, StreamSlice, list[Tag]]:
+def read_im4p(stream: StreamSlice) -> tuple[str, str, StreamSlice, StreamSlice | None, StreamSlice | None, StreamSlice | None]:
 	stream, hdr = read_hdr(stream)
 	assert hdr == 'IM4P', f'unexpected {repr(hdr)} header'
 	name, desc, payload = read_ia5string(stream), read_ia5string(stream), read_octet_string(stream)
 	rest = list(read_tags(stream))
-	return name, desc, payload, rest
+	kbag = None
+	if rest and rest[0][1] == (TagClass.UNIVERSAL, False, TagType.OCTET_STRING):
+		kbag = rest.pop(0)[2]
+	compression = None
+	if rest and rest[0][1] == (TagClass.UNIVERSAL, True, TagType.SEQUENCE):
+		compression = rest.pop(0)[2]
+	payp = None
+	if rest and rest[0][1] == (TagClass.CONTEXT_SPECIFIC, True, 0):
+		payp = rest.pop(0)[2]
+	assert not rest, f'leftover tags in payload: {rest}'
+	return name, desc, payload, kbag, compression, payp
+
+def read_payp(stream: StreamSlice) -> dict:
+	stream, hdr = read_hdr(stream)
+	assert hdr == 'PAYP', f'unexpected {repr(hdr)} header'
+	body, = read_tags(stream)
+	body = decode_im4m_value(body)
+	assert type(body) is dict
+	return body
 
 def read_im4m(stream: StreamSlice) -> tuple[Tag, bytes, list[StreamSlice]]:
 	stream, hdr = read_hdr(stream)

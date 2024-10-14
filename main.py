@@ -114,9 +114,10 @@ def print_blob(name: str, blob: StreamSlice, prefix='', intermediate=False):
 fourcc_tables = {
 	'manb': (tables.component_names, lambda x: x),
 	'manp': (tables.payload_tags, lambda x: x[1]),
+	'payp': (tables.payp_tags, lambda x: x[1]),
 }
 
-def format_4cc(name: str, parent: Literal['manb', 'manp', None] = None) -> str:
+def format_4cc(name: str, parent: Literal['manb', 'manp', 'payp', None] = None) -> str:
 	if len(name) == 4 and name.isascii() and name.isalnum():
 		desc = name
 	else:
@@ -128,12 +129,25 @@ def format_4cc(name: str, parent: Literal['manb', 'manp', None] = None) -> str:
 		desc += ansi_fg6(f' ({label})')
 	return desc
 
+def handle_payp(stream: StreamSlice, prefix=''):
+	payp = img4.read_payp(stream)
+	for key, value in payp.items():
+		print(prefix + BULLET + format_4cc(key, 'payp') + EQ + format_im4m_value(key, value))
+
 def handle_payload(stream: StreamSlice, prefix=''):
-	name, desc, payload, rest = img4.read_im4p(stream)
+	name, desc, payload, kbag, compression, payp = img4.read_im4p(stream)
 	print(prefix + 'Name: ' + format_4cc(name, 'manb'))
 	print(prefix + 'Description: ' + STRING(repr(desc)))
 	print_blob('Payload', payload, prefix)
-	# TODO: rest
+	if kbag:
+		print_blob('KBAG (encryption parameters)', kbag, prefix)
+	if compression:
+		print_blob('Compression', compression, prefix)
+	if payp:
+		print(prefix)
+		print_blob('PAYP (metadata)', payp, prefix, intermediate=True)
+		with safe_parse(prefix + BAR):
+			handle_payp(payp, prefix + BAR)
 
 def format_component_tag(key: str, value) -> str:
 	if key == 'DGST':
