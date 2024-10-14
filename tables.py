@@ -5,10 +5,11 @@ component_names = dict(
 
 	# (components inside <vuid>/boot/<nsih>/usr/standalone/firmware)
 	isys='Root hash',
+    xsys='x86 root hash',
 	csys='Base system root hash',
-	dtre='Embedded device trees',
+	dtre='Embedded device tree',
 	ibot='iBoot (stage 2)',
-	ibdt='iBoot data',
+	ibdt='iBoot (stage 2) data',
 	anef='ANE firmware',
 	aopf='AOP firmware',
 	avef='AVE firmware',
@@ -21,21 +22,52 @@ component_names = dict(
 	pmpf='PMP firmware',
 	siof='SmartIO firmware',
 	trst='Static trust cache',
+    xstc='x86 static trust cache',
 	bstc='Base system trust cache',
+    xbtc='x86 base system trust cache',
 
-	# (components signed by APticket that are not in the previous section)
-	msys=None,
+	# (components signed by APticket that are not in the previous section) <-- no longer true
+	msys='mtree',
+    xmtr='x86 mtree',
 	bsys='recoveryOS rootfs ramdisk',
-	ibec='iBEC firmware',
+	ibec='iBEC DFU firmware',
+    ibss='iBSS DFU firmware',
 	krnl='Kernelcache',
 	rdsk='ramdisk?',
 	rkrn='recovery kernelcache?',
 	rdtr='recovery device tree?',
 	rlgo=None,
 	rosi=None,
-	rtsc=None,
+	rtsc='recovery trust cache',
+    xrtc='x86 recovery trust cache',
+    cssy='cryptex(?) root hash',
+    trcs='cryptex(?) trust cache',
+    casy='something(?) root hash',
+	trca='something(?) trust cache',
+
+	# (other firmware blobs)
+    illb='iBoot Low Level Bootloader (aka stage 1)',
+    ibd1='iBoot (stage 1) data',
+    ciof='CIO firmware',
+    tmuf='TMU firmware',
+    ansf='ANS firmware',
+    dcpf='DCP firmware',
+    dven='related to display calibration',
+
+	# (embedded images)
+    logo='applelogo embedded image',
+    recm='recoverymode embedded image',
+    glyP='glphyplugin embedded image',
+    chg0='batterycharging0 embedded image',
+    chg1='batterycharging1 embedded image',
+    batF='batteryfull embedded image',
+    bat0='batterylow0 embedded image',
+    bat1='batterylow1 embedded image',
+    rlg0='recoveryoslogo0 embedded image',
+    rlg1='recoveryoslogo1 embedded image',
 
     trbb='Bootability trust cache',
+    fuos='fully untrusted OS',
 )
 
 payload_tags = dict(
@@ -97,5 +129,6 @@ payload_tags = dict(
 )
 
 payp_tags = dict(
-    # TODO
+    kcep=(int, 'Kernelcache entry point (virtual address)'),
+    kclo=(int, 'Kernelcache lowest virtual address'),
 )
